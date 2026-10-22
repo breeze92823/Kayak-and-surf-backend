@@ -4,6 +4,7 @@ import {
   AVATAR_MAX_LEN,
   DISTANCE_MAX,
   GUEST_ID_PREFIX,
+  ID_PATTERN,
   LEADERBOARD_QUERY_LIMIT,
   LEADERBOARD_REFRESH_MS,
   LEADERBOARD_ROWS,
@@ -21,6 +22,7 @@ import { claimDaily, dailyView, freshDaily, sanitizeDaily, type DailyDoc } from 
 
 const finite = (n: unknown): n is number => typeof n === "number" && Number.isFinite(n);
 const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(min, n));
+const TILT_MAX = Math.PI / 2; // pose pitch/roll (rad)
 
 function sanitizeAvatar(raw: unknown): string {
   return typeof raw === "string" && raw.length <= AVATAR_MAX_LEN ? raw : "";
@@ -35,7 +37,7 @@ function sanitizeName(raw: unknown): string {
   return typeof raw === "string" ? raw.slice(0, NAME_MAX) : "";
 }
 
-// One board per stat, matching the hub's three boards (COIN / TROPHIES / PLAYTIME).
+// One board per stat, matching the hub's three TOP 100 boards (COIN / WINS = trophies / PLAYTIME).
 const LEADERBOARD_STATS = ["coins", "trophies", "playtime"] as const;
 type LeaderboardStat = (typeof LEADERBOARD_STATS)[number];
 // `avatar` (Bloxity avatar JSON) is only set on a board's #1 row.
@@ -111,10 +113,13 @@ export class WorldRoom extends Room<{ state: WorldState }> {
       if (finite(msg?.y)) p.y = clamp(msg.y, b.minY, b.maxY);
       if (finite(msg?.z)) p.z = clamp(msg.z, b.minZ, b.maxZ);
       if (finite(msg?.yaw)) p.yaw = msg.yaw;
+      if (finite(msg?.pitch)) p.pitch = clamp(msg.pitch, -TILT_MAX, TILT_MAX);
+      if (finite(msg?.roll)) p.roll = clamp(msg.roll, -TILT_MAX, TILT_MAX);
       if (finite(msg?.speed01)) p.speed01 = clamp(msg.speed01, 0, 1);
       if (typeof msg?.grounded === "boolean") p.grounded = msg.grounded;
       if (msg?.pose === null) p.pose = "";
       else if (typeof msg?.pose === "string" && msg.pose.length <= POSE_MAX) p.pose = msg.pose;
+      if (typeof msg?.boat === "string" && (msg.boat === "" || ID_PATTERN.test(msg.boat))) p.boat = msg.boat;
     },
     // Bloxity avatar JSON; sent on connect and whenever the portal reports a change.
     setAvatar: (client: Client, msg: { avatar?: string }) => {

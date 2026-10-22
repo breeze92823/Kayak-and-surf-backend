@@ -15,9 +15,12 @@ export const PlayerState = schema(
     y: t.float64().default(SPAWN.y),
     z: t.float64().default(SPAWN.z),
     yaw: t.float64().default(0),
+    pitch: t.float64().default(0), // raft tilt on the slide (rad), applied after yaw -- cosmetic
+    roll: t.float64().default(0),
     speed01: t.float64().default(0), // 0..1 paddle/surf speed factor -- purely cosmetic
     grounded: t.boolean().default(true),
     pose: t.string().default(""), // client animation name ("" = none), e.g. "paddle", "surf"
+    boat: t.string().default(""), // equipped Kayak Shop boat id ("" = the log raft)
     // The player's Bloxity avatar { equipped, proportions } as an opaque JSON string,
     // stored and relayed as-is (length-capped, never parsed here).
     avatar: t.string().default(""),

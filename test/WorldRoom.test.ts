@@ -88,7 +88,7 @@ describe("WorldRoom", () => {
     const c2 = await colyseus.connectTo(room);
     await room.waitForNextPatch();
 
-    c1.send("pose", { x: -60.5, y: 2, z: -3, yaw: 0.5, speed01: 7, grounded: false, pose: "paddle" });
+    c1.send("pose", { x: -60.5, y: 2, z: -3, yaw: 0.5, pitch: 0.3, roll: -9, speed01: 7, grounded: false, pose: "paddle", boat: "cloud" });
     await room.waitForNextPatch();
     const s = c2.state.players.get(c1.sessionId)!;
     assert.strictEqual(s.x, -60.5);
@@ -98,14 +98,18 @@ describe("WorldRoom", () => {
     assert.strictEqual(s.speed01, 1); // clamped to 0..1
     assert.strictEqual(s.grounded, false);
     assert.strictEqual(s.pose, "paddle");
+    assert.strictEqual(s.pitch, 0.3);
+    assert.strictEqual(s.roll, -Math.PI / 2); // clamped
+    assert.strictEqual(s.boat, "cloud");
 
     // NaN is ignored, null clears the pose, out-of-world positions are clamped.
-    c1.send("pose", { x: NaN, z: 99999, pose: null });
+    c1.send("pose", { x: NaN, z: 99999, pose: null, boat: "<b>Bad boat</b>" });
     await room.waitForNextPatch();
     const s2 = c2.state.players.get(c1.sessionId)!;
     assert.strictEqual(s2.x, -60.5);
     assert.strictEqual(s2.z, WORLD_BOUNDS.maxZ);
     assert.strictEqual(s2.pose, "");
+    assert.strictEqual(s2.boat, "cloud"); // not a boat id: ignored
   });
 
   it("relays avatar changes and rejects oversized ones", async () => {
